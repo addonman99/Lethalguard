@@ -1,27 +1,33 @@
 package com.addonman.lethalguard;
 
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
+import net.minecraft.server.level.ServerPlayer;
 
 @Mod(LethalGuard.MOD_ID)
-@EventBusSubscriber(modid = LethalGuard.MOD_ID)
 public class LethalGuard {
     public static final String MOD_ID = "lethalguard";
 
-    @SubscribeEvent
-    public static void onLivingDamage(LivingDamageEvent.Pre event) {
-        float health = event.getEntity().getHealth();
+    public LethalGuard() {
+        NeoForge.EVENT_BUS.register(this);
+    }
 
-        if (health <= 1.0F) {
+    @SubscribeEvent
+    public void onLivingDamage(LivingDamageEvent.Pre event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) {
             return;
         }
 
+        float health = player.getHealth();
+        float absorption = player.getAbsorptionAmount();
         float incoming = event.getNewDamage();
 
-        if (incoming >= health) {
-            event.setNewDamage(health - 1.0F);
+        float totalEffectiveHealth = health + absorption;
+
+        if (health > 1.0F && incoming >= totalEffectiveHealth) {
+            event.setNewDamage(Math.max(0.0F, totalEffectiveHealth - 1.0F));
         }
     }
 }
